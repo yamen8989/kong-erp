@@ -577,7 +577,7 @@ export default function App() {
         {/* ═══ DASHBOARD ═══ */}
         {page==="dashboard" && <>
           <h2 style={{ margin:"0 0 16px", fontWeight:800, color:"#0f172a", fontSize:20 }}>Dashboard</h2>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(155px,1fr))", gap:12, marginBottom:20 }}>
+          <div className="kpi-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))", gap:10, marginBottom:16 }}>
             <KpiCard label="Total Revenue" value={$(totalRev)}           scheme="green"/>
             <KpiCard label="Total Cost"    value={$(totalCost)}          scheme="red"/>
             <KpiCard label="Gross Profit"  value={$(profit)}             scheme="blue"   sub={profit>=0?"▲ Profit":"▼ Loss"}/>
@@ -598,40 +598,71 @@ export default function App() {
             </div>
           )}
 
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:18 }}>
-            <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e2e8f0", padding:"16px 16px 10px" }}>
-              <div style={{ fontWeight:700, color:"#0f172a", marginBottom:12, fontSize:14 }}>🏆 Top Products by Revenue</div>
+          <style>{`
+            @media(max-width:640px){
+              .charts-grid{grid-template-columns:1fr!important}
+              .kpi-grid{grid-template-columns:1fr 1fr!important}
+              .sale-card-table{display:none!important}
+              .sale-card-mobile{display:block!important}
+            }
+            @media(min-width:641px){
+              .sale-card-mobile{display:none!important}
+              .sale-card-table{display:block!important}
+            }
+          `}</style>
+
+          {/* Charts — stack on mobile */}
+          <div className="charts-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:16 }}>
+
+            {/* Top Products */}
+            <div style={{ background:"#fff", borderRadius:16, border:"1px solid #e2e8f0", padding:"16px 14px 12px" }}>
+              <div style={{ fontWeight:700, color:"#0f172a", marginBottom:14, fontSize:14, display:"flex", alignItems:"center", gap:6 }}>
+                🏆 Top Products
+              </div>
               {topProds.length===0
                 ? <div style={{ color:"#94a3b8", fontSize:13, padding:"28px 0", textAlign:"center" }}>No sales yet</div>
-                : <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={topProds} layout="vertical" margin={{left:0,right:24,top:4,bottom:4}}>
-                      <XAxis type="number" tick={{fontSize:10}} tickFormatter={v=>"$"+v}/>
-                      <YAxis type="category" dataKey="name" width={145} tick={{fontSize:9}}/>
-                      <Tooltip formatter={v=>["$"+v.toFixed(2),"Revenue"]}/>
-                      <Bar dataKey="rev" radius={[0,5,5,0]}>{topProds.map((_,i)=><Cell key={i} fill={PALETTE[i%PALETTE.length]}/>)}</Bar>
+                : <ResponsiveContainer width="100%" height={240}>
+                    <BarChart data={topProds} layout="vertical" margin={{left:0,right:28,top:4,bottom:4}}>
+                      <XAxis type="number" tick={{fontSize:10}} tickFormatter={v=>"$"+v} axisLine={false} tickLine={false}/>
+                      <YAxis type="category" dataKey="name" width={130} tick={{fontSize:9}} axisLine={false} tickLine={false}/>
+                      <Tooltip
+                        contentStyle={{borderRadius:10,border:"none",boxShadow:"0 4px 20px rgba(0,0,0,0.1)",fontSize:12}}
+                        formatter={v=>["$"+v.toFixed(2),"Revenue"]}/>
+                      <Bar dataKey="rev" radius={[0,6,6,0]}>
+                        {topProds.map((_,i)=><Cell key={i} fill={PALETTE[i%PALETTE.length]}/>)}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
               }
             </div>
-            <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e2e8f0", padding:"16px 16px 10px" }}>
-              <div style={{ fontWeight:700, color:"#0f172a", marginBottom:12, fontSize:14 }}>📲 Sales by Channel</div>
+
+            {/* Sales by Channel */}
+            <div style={{ background:"#fff", borderRadius:16, border:"1px solid #e2e8f0", padding:"16px 14px 12px" }}>
+              <div style={{ fontWeight:700, color:"#0f172a", marginBottom:14, fontSize:14 }}>📲 By Channel</div>
               {sourcePie.length===0
                 ? <div style={{ color:"#94a3b8", fontSize:13, padding:"28px 0", textAlign:"center" }}>No sales yet</div>
                 : <>
-                    <ResponsiveContainer width="100%" height={170}>
+                    <ResponsiveContainer width="100%" height={180}>
                       <PieChart>
-                        <Pie data={sourcePie} dataKey="revenue" nameKey="name" cx="50%" cy="50%" outerRadius={72} label={({name,percent})=>`${name} ${(percent*100).toFixed(0)}%`} labelLine={false} fontSize={10}>
+                        <Pie data={sourcePie} dataKey="revenue" nameKey="name"
+                          cx="50%" cy="50%" innerRadius={45} outerRadius={75}
+                          paddingAngle={3}>
                           {sourcePie.map((_,i)=><Cell key={i} fill={PALETTE[i]}/>)}
                         </Pie>
-                        <Tooltip formatter={v=>["$"+v.toFixed(2),"Revenue"]}/>
+                        <Tooltip
+                          contentStyle={{borderRadius:10,border:"none",boxShadow:"0 4px 20px rgba(0,0,0,0.1)",fontSize:12}}
+                          formatter={v=>["$"+v.toFixed(2),"Revenue"]}/>
                       </PieChart>
                     </ResponsiveContainer>
-                    <div style={{ display:"flex", flexWrap:"wrap", gap:8, justifyContent:"center" }}>
+                    <div style={{ display:"flex", flexDirection:"column", gap:6, marginTop:4 }}>
                       {sourcePie.map((s,i)=>(
-                        <span key={s.name} style={{ fontSize:11, color:"#475569", display:"flex", alignItems:"center", gap:4 }}>
-                          <span style={{ width:9,height:9,borderRadius:2,background:PALETTE[i],display:"inline-block" }}/>
-                          {s.name}: {$(s.revenue)}
-                        </span>
+                        <div key={s.name} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 8px", background:"#f8fafc", borderRadius:8 }}>
+                          <span style={{ fontSize:12, color:"#475569", display:"flex", alignItems:"center", gap:6 }}>
+                            <span style={{ width:10,height:10,borderRadius:3,background:PALETTE[i],display:"inline-block",flexShrink:0 }}/>
+                            {s.name}
+                          </span>
+                          <span style={{ fontSize:12, fontWeight:700, color:"#0f172a" }}>{$(s.revenue)}</span>
+                        </div>
                       ))}
                     </div>
                   </>
@@ -639,27 +670,53 @@ export default function App() {
             </div>
           </div>
 
-          <div style={{ background:"#fff", borderRadius:14, border:"1px solid #e2e8f0", padding:16 }}>
-            <div style={{ fontWeight:700, color:"#0f172a", marginBottom:12, fontSize:14 }}>🕐 Recent Sales</div>
+          {/* Recent Sales */}
+          <div style={{ background:"#fff", borderRadius:16, border:"1px solid #e2e8f0", overflow:"hidden" }}>
+            <div style={{ padding:"14px 16px 12px", borderBottom:"1px solid #f1f5f9", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div style={{ fontWeight:700, color:"#0f172a", fontSize:14 }}>🕐 Recent Sales</div>
+              {sales.length>0 && <span style={{ fontSize:12, color:"#94a3b8" }}>{sales.length} total</span>}
+            </div>
+
             {sales.length===0
-              ? <div style={{ color:"#94a3b8", fontSize:13, textAlign:"center", padding:"20px 0" }}>No sales yet — click "+ Sale"</div>
-              : <div style={{ overflowX:"auto" }}>
-                  <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
-                    <THead cols={["Date","Product","Qty","Revenue","Client","Source"]}/>
-                    <tbody>
-                      {[...sales].reverse().slice(0,8).map((r,i)=>(
-                        <tr key={r.id}>
-                          <td style={tdSt(i)}><span style={{ fontSize:12,color:"#64748b" }}>{r.date}</span></td>
-                          <td style={tdSt(i)}><span style={{ fontWeight:500 }}>{r.product_name}</span></td>
-                          <td style={{...tdSt(i),textAlign:"center"}}>{r.qty}</td>
-                          <td style={tdSt(i)}><span style={{ color:"#16a34a",fontWeight:700 }}>{$(r.total)}</span></td>
-                          <td style={tdSt(i)}><span style={{ color:"#64748b" }}>{r.client||"—"}</span></td>
-                          <td style={tdSt(i)}>{r.source?<SourceBadge src={r.source}/>:"—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              ? <div style={{ color:"#94a3b8", fontSize:13, textAlign:"center", padding:"32px 0" }}>No sales yet — tap "+ Sale" to start</div>
+              : <>
+                  {/* Desktop table */}
+                  <div className="sale-card-table">
+                    <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                      <THead cols={["Date","Product","Qty","Revenue","Client","Source"]}/>
+                      <tbody>
+                        {[...sales].reverse().slice(0,8).map((r,i)=>(
+                          <tr key={r.id}>
+                            <td style={tdSt(i)}><span style={{ fontSize:12,color:"#64748b" }}>{r.date}</span></td>
+                            <td style={tdSt(i)}><span style={{ fontWeight:500 }}>{r.product_name}</span></td>
+                            <td style={{...tdSt(i),textAlign:"center"}}>{r.qty}</td>
+                            <td style={tdSt(i)}><span style={{ color:"#16a34a",fontWeight:700 }}>{$(r.total)}</span></td>
+                            <td style={tdSt(i)}><span style={{ color:"#64748b" }}>{r.client||"—"}</span></td>
+                            <td style={tdSt(i)}>{r.source?<SourceBadge src={r.source}/>:"—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile cards */}
+                  <div className="sale-card-mobile" style={{ padding:"10px 12px", display:"flex", flexDirection:"column", gap:8 }}>
+                    {[...sales].reverse().slice(0,8).map((r,i)=>(
+                      <div key={r.id} style={{ background:i%2===0?"#f8fafc":"#fff", borderRadius:12, padding:"12px 14px", border:"1px solid #f1f5f9" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
+                          <div style={{ fontWeight:600, fontSize:13, color:"#0f172a", flex:1, paddingRight:8, lineHeight:1.4 }}>{r.product_name}</div>
+                          <div style={{ fontSize:16, fontWeight:800, color:"#16a34a", whiteSpace:"nowrap" }}>{$(r.total)}</div>
+                        </div>
+                        <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
+                          <span style={{ fontSize:11, color:"#94a3b8" }}>{r.date}</span>
+                          <span style={{ fontSize:11, background:"#f1f5f9", color:"#475569", padding:"2px 8px", borderRadius:20, fontWeight:500 }}>Qty: {r.qty}</span>
+                          {r.client && <span style={{ fontSize:11, color:"#64748b" }}>👤 {r.client}</span>}
+                          {r.source && <SourceBadge src={r.source}/>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
             }
           </div>
         </>}
