@@ -12,7 +12,8 @@ const PALETTE  = ["#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#
 
 const $   = (n) => "$" + Number(n || 0).toFixed(2);
 const f2  = (n) => Number(n || 0).toFixed(2);
-const tod = () => new Date().toISOString().split("T")[0];
+const tod  = () => new Date().toISOString().split("T")[0];
+const toNum = (v) => parseFloat(String(v).replace(",",".")) || 0;
 
 // ─── Supabase REST helpers ─────────────────────────────────────────────────
 const H = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" };
@@ -138,10 +139,10 @@ function ProductForm({ initial, onSave, onClose, saving }) {
       </Field>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
         <Field label="Cost Price ($)">
-          <input type="number" min="0" step="0.01" placeholder="0.00" value={f.cost} onChange={e=>set("cost",e.target.value)} style={iSt}/>
+          <input type="text" inputMode="decimal" placeholder="e.g. 2,60" value={f.cost} onChange={e=>set("cost",e.target.value)} style={iSt}/>
         </Field>
         <Field label="Selling Price ($)">
-          <input type="number" min="0" step="0.01" placeholder="0.00" value={f.sell} onChange={e=>set("sell",e.target.value)} style={iSt}/>
+          <input type="text" inputMode="decimal" placeholder="e.g. 25,00" value={f.sell} onChange={e=>set("sell",e.target.value)} style={iSt}/>
         </Field>
       </div>
       {margin && (
@@ -178,10 +179,10 @@ function AddPurchase({ onSave, onClose, products }) {
     setShowDrop(false);
   };
 
-  const total  = f.qty&&f.cost ? (parseFloat(f.qty)*parseFloat(f.cost)).toFixed(2) : null;
-  const margin = f.cost&&f.sell ? (parseFloat(f.sell)-parseFloat(f.cost)).toFixed(2) : null;
+  const total  = f.qty&&f.cost ? (toNum(f.qty)*toNum(f.cost)).toFixed(2) : null;
+  const margin = f.cost&&f.sell ? (toNum(f.sell)-toNum(f.cost)).toFixed(2) : null;
 
-  const valid = f.date && f.name.trim() && f.qty>0 && f.cost>0 && (isExist || f.sell>0);
+  const valid = f.date && f.name.trim() && toNum(f.qty)>0 && toNum(f.cost)>0 && (isExist || toNum(f.sell)>0);
 
   const submit = async () => {
     if (!valid) return;
@@ -190,9 +191,9 @@ function AddPurchase({ onSave, onClose, products }) {
       date:    f.date,
       name:    f.name.trim(),
       qty:     Number(f.qty),
-      cost:    Number(f.cost),
-      sell:    Number(f.sell) || (matched?.sell||0),
-      total:   Number(total),
+      cost:    toNum(f.cost),
+      sell:    toNum(f.sell) || (matched?.sell||0),
+      total:   toNum(total),
       notes:   f.notes,
       isNew,
       matchedId: matched?.id || null,
@@ -249,10 +250,10 @@ function AddPurchase({ onSave, onClose, products }) {
       {(isNew || isExist) && (
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
           <Field label="Unit Cost ($)">
-            <input type="number" min="0" step="0.01" placeholder="0.00" value={f.cost} onChange={e=>set("cost",e.target.value)} style={iSt}/>
+            <input type="text" inputMode="decimal" placeholder="e.g. 2,60" value={f.cost} onChange={e=>set("cost",e.target.value)} style={iSt}/>
           </Field>
           <Field label={isNew ? "Selling Price ($) *" : "Selling Price ($)"}>
-            <input type="number" min="0" step="0.01" placeholder="0.00" value={f.sell} onChange={e=>set("sell",e.target.value)} style={{ ...iSt, borderColor: isNew&&!f.sell?"#fca5a5":"#d1d5db" }}/>
+            <input type="text" inputMode="decimal" placeholder="e.g. 6,00" value={f.sell} onChange={e=>set("sell",e.target.value)} style={{ ...iSt, borderColor: isNew&&!f.sell?"#fca5a5":"#d1d5db" }}/>
           </Field>
         </div>
       )}
@@ -296,13 +297,13 @@ function AddSale({ onSave, onClose, products, inventory }) {
   const prod = products.find(p=>p.id===Number(f.pid));
   const stock = inventory[Number(f.pid)]||0;
   const handleProd = id => { const p=products.find(x=>x.id===Number(id)); setF(x=>({...x,pid:id,price:p?f2(p.sell):""})); };
-  const total = f.qty&&f.price ? (parseFloat(f.qty)*parseFloat(f.price)).toFixed(2) : null;
-  const over  = f.qty && Number(f.qty)>stock;
-  const valid = f.date&&f.pid&&f.qty>0&&f.price>0&&!over;
+  const total = f.qty&&f.price ? (toNum(f.qty)*toNum(f.price)).toFixed(2) : null;
+  const over  = f.qty && toNum(f.qty)>stock;
+  const valid = f.date&&f.pid&&toNum(f.qty)>0&&toNum(f.price)>0&&!over;
 
   const submit = async () => {
     if (!valid) return; setSaving(true);
-    await onSave({ date:f.date, product_id:Number(f.pid), product_name:prod.name, qty:Number(f.qty), price:Number(f.price), total:Number(total), client:f.client, source:f.source, notes:f.notes });
+    await onSave({ date:f.date, product_id:Number(f.pid), product_name:prod.name, qty:toNum(f.qty), price:toNum(f.price), total:toNum(total), client:f.client, source:f.source, notes:f.notes });
     setSaving(false); onClose();
   };
 
@@ -318,7 +319,7 @@ function AddSale({ onSave, onClose, products, inventory }) {
       {f.pid && <div style={{ background:"#eff6ff", borderRadius:8, padding:"6px 12px", marginBottom:10, fontSize:12, color:"#1d4ed8" }}>Stock available: <strong>{stock} units</strong></div>}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
         <Field label="Quantity"><input type="number" min="1" placeholder="0" value={f.qty} onChange={e=>set("qty",e.target.value)} style={{...iSt,borderColor:over?"#ef4444":"#d1d5db"}}/></Field>
-        <Field label="Selling Price ($)"><input type="number" min="0" step="0.01" placeholder="0.00" value={f.price} onChange={e=>set("price",e.target.value)} style={iSt}/></Field>
+        <Field label="Selling Price ($)"><input type="text" inputMode="decimal" placeholder="e.g. 25,00" value={f.price} onChange={e=>set("price",e.target.value)} style={iSt}/></Field>
       </div>
       {over && <div style={{ color:"#dc2626", fontSize:12, marginBottom:10, fontWeight:600 }}>⚠️ Exceeds available stock ({stock} units)</div>}
       {total&&!over && <div style={{ background:"#fffbeb", border:"1.5px solid #fde68a", borderRadius:10, padding:"10px 14px", marginBottom:14, display:"flex", justifyContent:"space-between" }}><span style={{ fontSize:13, color:"#d97706", fontWeight:600 }}>Total Revenue</span><span style={{ fontSize:20, fontWeight:800, color:"#78350f" }}>${total}</span></div>}
@@ -420,8 +421,8 @@ export default function App() {
         product_id:   productId,
         product_name: productName,
         qty:          row.qty,
-        cost:         row.cost,
-        total:        row.total,
+        cost:         toNum(row.cost),
+        total:        toNum(row.total),
         notes:        row.notes,
       });
       setPurchases(p => [...p, saved]);
