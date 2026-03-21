@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 // ⚙️  STEP 1: Paste your Supabase credentials here after creating your project
 // ─────────────────────────────────────────────────────────────────────────────
 const SUPABASE_URL  = "https://elyzbvmsinldegiwnjtc.supabase.co";   // ← replace this
-const SUPABASE_KEY  = "sb_publishable__evEq-Nu8tnX-OCSpa0jjA_7aED0nIJ";                  // ← replace this
+const SUPABASE_KEY  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVseXpidm1zaW5sZGVnaXduanRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNzU5MDgsImV4cCI6MjA4OTY1MTkwOH0.yiTJA7RKOgdfHh9DFbd4E5aLUs_VnCghw4xm1ORs7t4";                  // ← replace this
 
 // ─────────────────────────────────────────────────────────────────────────────
 const PRODUCTS = [
