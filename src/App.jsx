@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 // ─────────────────────────────────────────────────────────────────────────────
 // ⚙️  Paste your Supabase credentials here
 // ─────────────────────────────────────────────────────────────────────────────
-const SUPABASE_URL = "https://elyzbvmsinldegiwnjtc.supabase.co";
+const SUPABASE_URL = "https://https://elyzbvmsinldegiwnjtc.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVseXpidm1zaW5sZGVnaXduanRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNzU5MDgsImV4cCI6MjA4OTY1MTkwOH0.yiTJA7RKOgdfHh9DFbd4E5aLUs_VnCghw4xm1ORs7t4";
 
 const SOURCES  = ["Instagram","WhatsApp","In-Person","Website","Other"];
@@ -155,104 +155,122 @@ function ProductForm({ initial, onSave, onClose, saving }) {
   );
 }
 
-// ─── Add Purchase (auto-creates product if new) ───────────────────────────
+// ─── Smart Purchase Form — auto-creates product if new ────────────────────
 function AddPurchase({ onSave, onClose, products }) {
-  const [mode,   setMode]   = useState("existing"); // "existing" | "new"
-  const [f, setF] = useState({ date:tod(), pid:"", newName:"", qty:"", cost:"", sell:"", notes:"" });
-  const [saving, setSaving] = useState(false);
+  const [f, setF]         = useState({ date:tod(), name:"", qty:"", cost:"", sell:"", notes:"" });
+  const [showDrop, setShowDrop] = useState(false);
+  const [saving,   setSaving]   = useState(false);
   const set = (k,v) => setF(x=>({...x,[k]:v}));
 
-  const existingProd = products.find(p=>p.id===Number(f.pid));
-  const handleProd   = id => {
-    const p = products.find(x=>x.id===Number(id));
-    setF(x=>({...x, pid:id, cost:p?f2(p.cost):"", sell:p?f2(p.sell):""}));
+  // find if typed name matches an existing product
+  const matched   = products.find(p => p.name.toLowerCase() === f.name.trim().toLowerCase());
+  const isNew     = f.name.trim().length > 0 && !matched;
+  const isExist   = !!matched;
+
+  // suggestions while typing
+  const suggestions = f.name.trim().length > 0
+    ? products.filter(p => p.name.toLowerCase().includes(f.name.trim().toLowerCase())).slice(0,6)
+    : [];
+
+  // when user picks from suggestion
+  const pickSuggestion = (p) => {
+    setF(x=>({...x, name:p.name, cost:f2(p.cost), sell:f2(p.sell)}));
+    setShowDrop(false);
   };
 
-  const total = f.qty&&f.cost ? (parseFloat(f.qty)*parseFloat(f.cost)).toFixed(2) : null;
+  const total  = f.qty&&f.cost ? (parseFloat(f.qty)*parseFloat(f.cost)).toFixed(2) : null;
   const margin = f.cost&&f.sell ? (parseFloat(f.sell)-parseFloat(f.cost)).toFixed(2) : null;
 
-  const validExisting = f.date && f.pid     && f.qty>0 && f.cost>0;
-  const validNew      = f.date && f.newName.trim() && f.qty>0 && f.cost>0 && f.sell>0;
-  const valid         = mode==="existing" ? validExisting : validNew;
+  const valid = f.date && f.name.trim() && f.qty>0 && f.cost>0 && (isExist || f.sell>0);
 
   const submit = async () => {
     if (!valid) return;
     setSaving(true);
     await onSave({
-      date:      f.date,
-      pid:       mode==="existing" ? Number(f.pid) : null,
-      name:      mode==="existing" ? existingProd?.name : f.newName.trim(),
-      qty:       Number(f.qty),
-      cost:      Number(f.cost),
-      sell:      mode==="new" ? Number(f.sell) : (existingProd?.sell || 0),
-      total:     Number(total),
-      notes:     f.notes,
-      isNew:     mode==="new",
+      date:    f.date,
+      name:    f.name.trim(),
+      qty:     Number(f.qty),
+      cost:    Number(f.cost),
+      sell:    Number(f.sell) || (matched?.sell||0),
+      total:   Number(total),
+      notes:   f.notes,
+      isNew,
+      matchedId: matched?.id || null,
     });
     setSaving(false);
     onClose();
   };
 
-  const tabBtn = (label, val) => (
-    <button onClick={()=>{ setMode(val); setF(x=>({...x,pid:"",newName:"",cost:"",sell:""})); }}
-      style={{ flex:1, padding:"9px 0", border:"none", borderRadius:8, fontSize:13, fontWeight:600,
-               background: mode===val ? "#0f172a" : "#f1f5f9",
-               color:      mode===val ? "#fff"    : "#64748b", cursor:"pointer" }}>
-      {label}
-    </button>
-  );
-
   return (
     <Modal title="📦 Add Purchase" onClose={onClose}>
-      {/* Mode toggle */}
-      <div style={{ display:"flex", gap:6, marginBottom:16, background:"#f1f5f9", borderRadius:10, padding:4 }}>
-        {tabBtn("Select existing product", "existing")}
-        {tabBtn("➕ Add new product",      "new")}
-      </div>
-
       <Field label="Date">
         <input type="date" value={f.date} onChange={e=>set("date",e.target.value)} style={iSt}/>
       </Field>
 
-      {/* EXISTING product */}
-      {mode==="existing" && (
-        <Field label="Product">
-          <select value={f.pid} onChange={e=>handleProd(e.target.value)} style={sSt}>
-            <option value="">— Select product —</option>
-            {products.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </Field>
-      )}
-
-      {/* NEW product */}
-      {mode==="new" && (
-        <>
-          <div style={{ background:"#eff6ff", border:"1.5px solid #bfdbfe", borderRadius:10, padding:"10px 14px", marginBottom:14, fontSize:12, color:"#1d4ed8", fontWeight:500 }}>
-            ✨ This product will be <strong>automatically added</strong> to your Products catalog
-          </div>
-          <Field label="New Product Name">
-            <input type="text" placeholder="e.g. Kong Extreme Black (XXL)" value={f.newName} onChange={e=>set("newName",e.target.value)} style={iSt}/>
-          </Field>
-          <Field label="Selling Price ($) — for catalog">
-            <input type="number" min="0" step="0.01" placeholder="0.00" value={f.sell} onChange={e=>set("sell",e.target.value)} style={iSt}/>
-          </Field>
-          {margin && (
-            <div style={{ background:"#f0fdf4", border:"1.5px solid #bbf7d0", borderRadius:8, padding:"8px 12px", marginBottom:12, display:"flex", justifyContent:"space-between", fontSize:12 }}>
-              <span style={{ color:"#15803d", fontWeight:600 }}>Profit per unit</span>
-              <span style={{ color:"#14532d", fontWeight:800 }}>${margin}</span>
+      {/* ── Smart product name input ── */}
+      <Field label="Product Name">
+        <div style={{ position:"relative" }}>
+          <input
+            type="text"
+            placeholder="Type product name..."
+            value={f.name}
+            autoComplete="off"
+            onChange={e=>{ set("name",e.target.value); setShowDrop(true);
+              // auto-fill prices if exact match
+              const m = products.find(p=>p.name.toLowerCase()===e.target.value.trim().toLowerCase());
+              if(m) setF(x=>({...x,name:e.target.value,cost:f2(m.cost),sell:f2(m.sell)}));
+            }}
+            onFocus={()=>setShowDrop(true)}
+            onBlur={()=>setTimeout(()=>setShowDrop(false),150)}
+            style={{...iSt, borderColor: isExist?"#86efac": isNew&&f.name?"#93c5fd":"#d1d5db"}}
+          />
+          {/* Dropdown suggestions */}
+          {showDrop && suggestions.length>0 && (
+            <div style={{ position:"absolute", top:"100%", left:0, right:0, background:"#fff", border:"1.5px solid #e2e8f0", borderRadius:10, zIndex:50, boxShadow:"0 8px 24px rgba(0,0,0,0.1)", marginTop:4, overflow:"hidden" }}>
+              {suggestions.map(p=>(
+                <div key={p.id} onMouseDown={()=>pickSuggestion(p)}
+                  style={{ padding:"10px 14px", cursor:"pointer", fontSize:13, borderBottom:"1px solid #f1f5f9", display:"flex", justifyContent:"space-between", alignItems:"center" }}
+                  onMouseEnter={e=>e.currentTarget.style.background="#f8fafc"}
+                  onMouseLeave={e=>e.currentTarget.style.background="#fff"}>
+                  <span style={{ fontWeight:500 }}>{p.name}</span>
+                  <span style={{ fontSize:11, color:"#64748b" }}>Cost {$(p.cost)} · Sell {$(p.sell)}</span>
+                </div>
+              ))}
             </div>
           )}
-        </>
+        </div>
+
+        {/* Status tag */}
+        {isExist && <div style={{ marginTop:6, fontSize:12, color:"#15803d", fontWeight:600 }}>✓ Existing product — prices auto-filled</div>}
+        {isNew   && f.name && <div style={{ marginTop:6, fontSize:12, color:"#2563eb", fontWeight:600 }}>✨ New product — will be added to Products catalog automatically</div>}
+      </Field>
+
+      {/* Selling price — only required for new products */}
+      {(isNew || isExist) && (
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+          <Field label="Unit Cost ($)">
+            <input type="number" min="0" step="0.01" placeholder="0.00" value={f.cost} onChange={e=>set("cost",e.target.value)} style={iSt}/>
+          </Field>
+          <Field label={isNew ? "Selling Price ($) *" : "Selling Price ($)"}>
+            <input type="number" min="0" step="0.01" placeholder="0.00" value={f.sell} onChange={e=>set("sell",e.target.value)} style={{ ...iSt, borderColor: isNew&&!f.sell?"#fca5a5":"#d1d5db" }}/>
+          </Field>
+        </div>
       )}
 
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-        <Field label="Quantity">
-          <input type="number" min="1" placeholder="0" value={f.qty} onChange={e=>set("qty",e.target.value)} style={iSt}/>
-        </Field>
-        <Field label="Unit Cost ($)">
-          <input type="number" min="0" step="0.01" placeholder="0.00" value={f.cost} onChange={e=>set("cost",e.target.value)} style={iSt}/>
-        </Field>
-      </div>
+      {isNew && !f.sell && f.name && (
+        <div style={{ color:"#dc2626", fontSize:12, marginBottom:10, fontWeight:500 }}>⚠️ Selling price is required for new products</div>
+      )}
+
+      {margin && (
+        <div style={{ background:"#eff6ff", border:"1.5px solid #bfdbfe", borderRadius:8, padding:"8px 14px", marginBottom:14, display:"flex", justifyContent:"space-between" }}>
+          <span style={{ fontSize:12, color:"#1d4ed8", fontWeight:600 }}>Profit per unit</span>
+          <span style={{ fontSize:16, fontWeight:800, color:"#1e3a8a" }}>${margin}</span>
+        </div>
+      )}
+
+      <Field label="Quantity">
+        <input type="number" min="1" placeholder="0" value={f.qty} onChange={e=>set("qty",e.target.value)} style={iSt}/>
+      </Field>
 
       {total && (
         <div style={{ background:"#f0fdf4", border:"1.5px solid #bbf7d0", borderRadius:10, padding:"10px 14px", marginBottom:14, display:"flex", justifyContent:"space-between" }}>
@@ -261,7 +279,7 @@ function AddPurchase({ onSave, onClose, products }) {
         </div>
       )}
 
-      <Field label="Supplier / Notes">
+      <Field label="Supplier / Notes (optional)">
         <input type="text" placeholder="Supplier name or note..." value={f.notes} onChange={e=>set("notes",e.target.value)} style={iSt}/>
       </Field>
 
