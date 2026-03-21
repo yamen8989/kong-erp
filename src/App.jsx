@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 // ─────────────────────────────────────────────────────────────────────────────
 // ⚙️  Paste your Supabase credentials here
 // ─────────────────────────────────────────────────────────────────────────────
-const SUPABASE_URL = "https://https://elyzbvmsinldegiwnjtc.supabase.co";
+const SUPABASE_URL = "https://elyzbvmsinldegiwnjtc.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVseXpidm1zaW5sZGVnaXduanRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNzU5MDgsImV4cCI6MjA4OTY1MTkwOH0.yiTJA7RKOgdfHh9DFbd4E5aLUs_VnCghw4xm1ORs7t4";
 
 const SOURCES  = ["Instagram","WhatsApp","In-Person","Website","Other"];
