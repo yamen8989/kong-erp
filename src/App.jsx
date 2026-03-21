@@ -342,6 +342,7 @@ export default function App() {
   const [toast,     setToast]     = useState(null);
   const [page,      setPage]      = useState("dashboard");
   const [modal,     setModal]     = useState(null);
+  const [menuOpen,  setMenuOpen]  = useState(false);
 
   const showToast = (msg, type="success", ms=2500) => {
     setToast({msg,type});
@@ -487,25 +488,88 @@ export default function App() {
     </div>
   );
 
+  const navTo = (id) => { setPage(id); setMenuOpen(false); };
+
   return (
     <div style={{ fontFamily:"'Segoe UI',Arial,sans-serif", minHeight:"100vh", background:"#f1f5f9" }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+        .mobile-menu{animation:slideDown 0.2s ease}
+      `}</style>
 
       {/* NAV */}
-      <div style={{ background:"#0f172a", display:"flex", alignItems:"center", padding:"0 16px", position:"sticky", top:0, zIndex:200, boxShadow:"0 2px 12px rgba(0,0,0,0.25)" }}>
-        <div style={{ fontWeight:800, fontSize:15, color:"#f8fafc", marginRight:20, padding:"14px 0", whiteSpace:"nowrap" }}>🐾 Kong & Flexi ERP</div>
-        <div style={{ display:"flex", flex:1, overflowX:"auto" }}>
-          {NAV.map(n=>(
-            <button key={n.id} onClick={()=>setPage(n.id)}
-              style={{ background:"none", border:"none", color:page===n.id?"#fff":"#94a3b8", fontWeight:page===n.id?700:400, fontSize:13, padding:"16px 13px", cursor:"pointer", borderBottom:page===n.id?"3px solid #3b82f6":"3px solid transparent", whiteSpace:"nowrap", fontFamily:"inherit" }}>
-              {n.icon} {n.label}
-            </button>
-          ))}
+      <div style={{ background:"#0f172a", position:"sticky", top:0, zIndex:200, boxShadow:"0 2px 12px rgba(0,0,0,0.25)" }}>
+        {/* Top bar */}
+        <div style={{ display:"flex", alignItems:"center", padding:"0 16px", height:52 }}>
+          {/* Logo */}
+          <div style={{ fontWeight:800, fontSize:15, color:"#f8fafc", flex:1, whiteSpace:"nowrap" }}>🐾 Kong & Flexi ERP</div>
+
+          {/* Desktop nav links — hidden on mobile */}
+          <div style={{ display:"flex", alignItems:"center" }} className="desktop-nav">
+            <style>{`
+              @media(max-width:640px){
+                .desktop-nav{display:none!important}
+                .desktop-actions{display:none!important}
+                .burger-btn{display:flex!important}
+              }
+              @media(min-width:641px){
+                .burger-btn{display:none!important}
+                .mobile-drawer{display:none!important}
+              }
+            `}</style>
+            {NAV.map(n=>(
+              <button key={n.id} onClick={()=>navTo(n.id)}
+                style={{ background:"none", border:"none", color:page===n.id?"#fff":"#94a3b8",
+                         fontWeight:page===n.id?700:400, fontSize:13, padding:"16px 12px",
+                         cursor:"pointer", borderBottom:page===n.id?"3px solid #3b82f6":"3px solid transparent",
+                         whiteSpace:"nowrap", fontFamily:"inherit" }}>
+                {n.icon} {n.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Desktop action buttons */}
+          <div style={{ display:"flex", gap:8, marginLeft:12 }} className="desktop-actions">
+            <button onClick={()=>setModal("purchase")} style={{ background:"#16a34a",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>+ Purchase</button>
+            <button onClick={()=>setModal("sale")}     style={{ background:"#2563eb",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>+ Sale</button>
+          </div>
+
+          {/* Burger button — mobile only */}
+          <button className="burger-btn" onClick={()=>setMenuOpen(o=>!o)}
+            style={{ display:"none", background:"none", border:"none", cursor:"pointer", padding:"6px", flexDirection:"column", gap:5, marginLeft:"auto" }}>
+            <span style={{ display:"block", width:22, height:2, background: menuOpen?"#ef4444":"#fff", borderRadius:2, transition:"all 0.2s", transform: menuOpen?"rotate(45deg) translate(5px,5px)":"none" }}/>
+            <span style={{ display:"block", width:22, height:2, background:"#fff", borderRadius:2, opacity: menuOpen?0:1, transition:"all 0.2s" }}/>
+            <span style={{ display:"block", width:22, height:2, background: menuOpen?"#ef4444":"#fff", borderRadius:2, transition:"all 0.2s", transform: menuOpen?"rotate(-45deg) translate(5px,-5px)":"none" }}/>
+          </button>
         </div>
-        <div style={{ display:"flex", gap:8, marginLeft:8 }}>
-          <button onClick={()=>setModal("purchase")} style={{ background:"#16a34a",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap" }}>+ Purchase</button>
-          <button onClick={()=>setModal("sale")}     style={{ background:"#2563eb",color:"#fff",border:"none",borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap" }}>+ Sale</button>
-        </div>
+
+        {/* Mobile drawer */}
+        {menuOpen && (
+          <div className="mobile-menu mobile-drawer" style={{ background:"#1e293b", borderTop:"1px solid #334155", padding:"8px 0 16px" }}>
+            {/* Nav items */}
+            {NAV.map(n=>(
+              <button key={n.id} onClick={()=>navTo(n.id)}
+                style={{ display:"flex", alignItems:"center", gap:12, width:"100%", background: page===n.id?"#0f172a":"none",
+                         border:"none", borderLeft: page===n.id?"3px solid #3b82f6":"3px solid transparent",
+                         color:page===n.id?"#fff":"#94a3b8", fontWeight:page===n.id?700:500,
+                         fontSize:15, padding:"13px 20px", cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                <span style={{ fontSize:18 }}>{n.icon}</span> {n.label}
+              </button>
+            ))}
+            {/* Action buttons in drawer */}
+            <div style={{ display:"flex", gap:10, padding:"12px 16px 0" }}>
+              <button onClick={()=>{setModal("purchase");setMenuOpen(false);}}
+                style={{ flex:1, background:"#16a34a",color:"#fff",border:"none",borderRadius:10,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer" }}>
+                + Purchase
+              </button>
+              <button onClick={()=>{setModal("sale");setMenuOpen(false);}}
+                style={{ flex:1, background:"#2563eb",color:"#fff",border:"none",borderRadius:10,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer" }}>
+                + Sale
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{ padding:"22px 20px 48px", maxWidth:1120, margin:"0 auto" }}>
