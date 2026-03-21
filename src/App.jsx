@@ -155,37 +155,116 @@ function ProductForm({ initial, onSave, onClose, saving }) {
   );
 }
 
-// ─── Add Purchase ──────────────────────────────────────────────────────────
+// ─── Add Purchase (auto-creates product if new) ───────────────────────────
 function AddPurchase({ onSave, onClose, products }) {
-  const [f, setF] = useState({ date:tod(), pid:"", qty:"", cost:"", notes:"" });
+  const [mode,   setMode]   = useState("existing"); // "existing" | "new"
+  const [f, setF] = useState({ date:tod(), pid:"", newName:"", qty:"", cost:"", sell:"", notes:"" });
   const [saving, setSaving] = useState(false);
   const set = (k,v) => setF(x=>({...x,[k]:v}));
-  const prod = products.find(p=>p.id===Number(f.pid));
-  const handleProd = id => { const p=products.find(x=>x.id===Number(id)); setF(x=>({...x,pid:id,cost:p?f2(p.cost):""})); };
+
+  const existingProd = products.find(p=>p.id===Number(f.pid));
+  const handleProd   = id => {
+    const p = products.find(x=>x.id===Number(id));
+    setF(x=>({...x, pid:id, cost:p?f2(p.cost):"", sell:p?f2(p.sell):""}));
+  };
+
   const total = f.qty&&f.cost ? (parseFloat(f.qty)*parseFloat(f.cost)).toFixed(2) : null;
-  const valid = f.date&&f.pid&&f.qty>0&&f.cost>0;
+  const margin = f.cost&&f.sell ? (parseFloat(f.sell)-parseFloat(f.cost)).toFixed(2) : null;
+
+  const validExisting = f.date && f.pid     && f.qty>0 && f.cost>0;
+  const validNew      = f.date && f.newName.trim() && f.qty>0 && f.cost>0 && f.sell>0;
+  const valid         = mode==="existing" ? validExisting : validNew;
 
   const submit = async () => {
-    if (!valid) return; setSaving(true);
-    await onSave({ date:f.date, product_id:Number(f.pid), product_name:prod.name, qty:Number(f.qty), cost:Number(f.cost), total:Number(total), notes:f.notes });
-    setSaving(false); onClose();
+    if (!valid) return;
+    setSaving(true);
+    await onSave({
+      date:      f.date,
+      pid:       mode==="existing" ? Number(f.pid) : null,
+      name:      mode==="existing" ? existingProd?.name : f.newName.trim(),
+      qty:       Number(f.qty),
+      cost:      Number(f.cost),
+      sell:      mode==="new" ? Number(f.sell) : (existingProd?.sell || 0),
+      total:     Number(total),
+      notes:     f.notes,
+      isNew:     mode==="new",
+    });
+    setSaving(false);
+    onClose();
   };
+
+  const tabBtn = (label, val) => (
+    <button onClick={()=>{ setMode(val); setF(x=>({...x,pid:"",newName:"",cost:"",sell:""})); }}
+      style={{ flex:1, padding:"9px 0", border:"none", borderRadius:8, fontSize:13, fontWeight:600,
+               background: mode===val ? "#0f172a" : "#f1f5f9",
+               color:      mode===val ? "#fff"    : "#64748b", cursor:"pointer" }}>
+      {label}
+    </button>
+  );
 
   return (
     <Modal title="📦 Add Purchase" onClose={onClose}>
-      <Field label="Date"><input type="date" value={f.date} onChange={e=>set("date",e.target.value)} style={iSt}/></Field>
-      <Field label="Product">
-        <select value={f.pid} onChange={e=>handleProd(e.target.value)} style={sSt}>
-          <option value="">— Select product —</option>
-          {products.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-      </Field>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-        <Field label="Quantity"><input type="number" min="1" placeholder="0" value={f.qty} onChange={e=>set("qty",e.target.value)} style={iSt}/></Field>
-        <Field label="Unit Cost ($)"><input type="number" min="0" step="0.01" placeholder="0.00" value={f.cost} onChange={e=>set("cost",e.target.value)} style={iSt}/></Field>
+      {/* Mode toggle */}
+      <div style={{ display:"flex", gap:6, marginBottom:16, background:"#f1f5f9", borderRadius:10, padding:4 }}>
+        {tabBtn("Select existing product", "existing")}
+        {tabBtn("➕ Add new product",      "new")}
       </div>
-      {total && <div style={{ background:"#f0fdf4", border:"1.5px solid #bbf7d0", borderRadius:10, padding:"10px 14px", marginBottom:14, display:"flex", justifyContent:"space-between" }}><span style={{ fontSize:13, color:"#15803d", fontWeight:600 }}>Total Cost</span><span style={{ fontSize:20, fontWeight:800, color:"#14532d" }}>${total}</span></div>}
-      <Field label="Supplier / Notes"><input type="text" placeholder="Supplier name or note..." value={f.notes} onChange={e=>set("notes",e.target.value)} style={iSt}/></Field>
+
+      <Field label="Date">
+        <input type="date" value={f.date} onChange={e=>set("date",e.target.value)} style={iSt}/>
+      </Field>
+
+      {/* EXISTING product */}
+      {mode==="existing" && (
+        <Field label="Product">
+          <select value={f.pid} onChange={e=>handleProd(e.target.value)} style={sSt}>
+            <option value="">— Select product —</option>
+            {products.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </Field>
+      )}
+
+      {/* NEW product */}
+      {mode==="new" && (
+        <>
+          <div style={{ background:"#eff6ff", border:"1.5px solid #bfdbfe", borderRadius:10, padding:"10px 14px", marginBottom:14, fontSize:12, color:"#1d4ed8", fontWeight:500 }}>
+            ✨ This product will be <strong>automatically added</strong> to your Products catalog
+          </div>
+          <Field label="New Product Name">
+            <input type="text" placeholder="e.g. Kong Extreme Black (XXL)" value={f.newName} onChange={e=>set("newName",e.target.value)} style={iSt}/>
+          </Field>
+          <Field label="Selling Price ($) — for catalog">
+            <input type="number" min="0" step="0.01" placeholder="0.00" value={f.sell} onChange={e=>set("sell",e.target.value)} style={iSt}/>
+          </Field>
+          {margin && (
+            <div style={{ background:"#f0fdf4", border:"1.5px solid #bbf7d0", borderRadius:8, padding:"8px 12px", marginBottom:12, display:"flex", justifyContent:"space-between", fontSize:12 }}>
+              <span style={{ color:"#15803d", fontWeight:600 }}>Profit per unit</span>
+              <span style={{ color:"#14532d", fontWeight:800 }}>${margin}</span>
+            </div>
+          )}
+        </>
+      )}
+
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+        <Field label="Quantity">
+          <input type="number" min="1" placeholder="0" value={f.qty} onChange={e=>set("qty",e.target.value)} style={iSt}/>
+        </Field>
+        <Field label="Unit Cost ($)">
+          <input type="number" min="0" step="0.01" placeholder="0.00" value={f.cost} onChange={e=>set("cost",e.target.value)} style={iSt}/>
+        </Field>
+      </div>
+
+      {total && (
+        <div style={{ background:"#f0fdf4", border:"1.5px solid #bbf7d0", borderRadius:10, padding:"10px 14px", marginBottom:14, display:"flex", justifyContent:"space-between" }}>
+          <span style={{ fontSize:13, color:"#15803d", fontWeight:600 }}>Total Cost</span>
+          <span style={{ fontSize:20, fontWeight:800, color:"#14532d" }}>${total}</span>
+        </div>
+      )}
+
+      <Field label="Supplier / Notes">
+        <input type="text" placeholder="Supplier name or note..." value={f.notes} onChange={e=>set("notes",e.target.value)} style={iSt}/>
+      </Field>
+
       <Btn label={saving?"Saving...":"✓ Save Purchase"} color={valid?"#16a34a":"#9ca3af"} onClick={submit} disabled={!valid||saving}/>
     </Modal>
   );
@@ -292,8 +371,44 @@ export default function App() {
   // ── Purchase / Sale CRUD ───────────────────────────────────────────────────
   const addPurchase = async (row) => {
     showToast("Saving...","loading");
-    try { const s=await sb.insert("purchases",{...row,id:Date.now()}); setPurchases(p=>[...p,s]); showToast("Purchase saved ✓"); }
-    catch { showToast("Failed","error"); }
+    try {
+      let productId = row.pid;
+      let productName = row.name;
+
+      // ── If new product → create it in products table first ──
+      if (row.isNew) {
+        const existing = products.find(p => p.name.toLowerCase() === row.name.toLowerCase());
+        if (existing) {
+          // product already exists with same name — reuse it
+          productId   = existing.id;
+          productName = existing.name;
+        } else {
+          const newProd = await sb.insert("products", {
+            id:   Date.now(),
+            name: row.name,
+            cost: row.cost,
+            sell: row.sell,
+          });
+          setProducts(p => [...p, newProd].sort((a,b) => a.name.localeCompare(b.name)));
+          productId   = newProd.id;
+          productName = newProd.name;
+          showToast(`"${newProd.name}" added to Products ✓`, "success", 3000);
+        }
+      }
+
+      const saved = await sb.insert("purchases", {
+        id:           Date.now() + 1,
+        date:         row.date,
+        product_id:   productId,
+        product_name: productName,
+        qty:          row.qty,
+        cost:         row.cost,
+        total:        row.total,
+        notes:        row.notes,
+      });
+      setPurchases(p => [...p, saved]);
+      showToast("Purchase saved ✓");
+    } catch(e) { showToast("Failed: " + e.message, "error"); }
   };
 
   const addSale = async (row) => {
