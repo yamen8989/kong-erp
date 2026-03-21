@@ -363,7 +363,7 @@ export default function App() {
   const addProduct = async (f) => {
     showToast("Saving...","loading");
     try {
-      const saved = await sb.insert("products",{ id:Date.now(), name:f.name.trim(), cost:Number(f.cost), sell:Number(f.sell) });
+      const saved = await sb.insert("products",{ name:f.name.trim(), cost:Number(f.cost), sell:Number(f.sell) });
       setProducts(p=>[...p,saved].sort((a,b)=>a.name.localeCompare(b.name)));
       showToast("Product added ✓"); setModal(null);
     } catch { showToast("Failed to save","error"); }
@@ -403,7 +403,6 @@ export default function App() {
           productName = existing.name;
         } else {
           const newProd = await sb.insert("products", {
-            id:   Date.now(),
             name: row.name,
             cost: row.cost,
             sell: row.sell,
@@ -416,7 +415,6 @@ export default function App() {
       }
 
       const saved = await sb.insert("purchases", {
-        id:           Date.now() + 1,
         date:         row.date,
         product_id:   productId,
         product_name: productName,
@@ -432,7 +430,7 @@ export default function App() {
 
   const addSale = async (row) => {
     showToast("Saving...","loading");
-    try { const s=await sb.insert("sales",{...row,id:Date.now()}); setSales(p=>[...p,s]); showToast("Sale recorded ✓"); }
+    try { const s=await sb.insert("sales",{...row}); setSales(p=>[...p,s]); showToast("Sale recorded ✓"); }
     catch { showToast("Failed","error"); }
   };
 
