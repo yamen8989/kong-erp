@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
-const APP_NAME     = "Kong & Flexi ERP";
+const APP_NAME     = "HachiCo.POS";
 const APP_ICON     = "🐾";
 const SUPABASE_URL = "https://elyzbvmsinldegiwnjtc.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVseXpidm1zaW5sZGVnaXduanRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNzU5MDgsImV4cCI6MjA4OTY1MTkwOH0.yiTJA7RKOgdfHh9DFbd4E5aLUs_VnCghw4xm1ORs7t4";
